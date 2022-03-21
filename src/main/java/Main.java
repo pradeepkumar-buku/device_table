@@ -10,7 +10,7 @@ public class Main {
      * Get all records of devices table.
      **/
     public static Map<String, List<String>> getAllRecordsInMap(Connection conn) {
-        String QUERY = "SELECT * from development.devices";
+        String QUERY = "SELECT * from public.devices where is_deleted is null or is_deleted = 'false'";
         Map<String, List<String>> mapAndroidIdToDeviceId = null;
         Statement stmt;
         ResultSet rs;
@@ -18,17 +18,23 @@ public class Main {
             stmt = conn.createStatement();
             rs = stmt.executeQuery(QUERY);
             mapAndroidIdToDeviceId = new TreeMap<>();
+            int countRecords = 0;
+            int countDuplicateRecords = 0;
             while (rs.next()) {
                 String deviceId = rs.getString("device_id");
                 String androidId = rs.getString("android_id");
                 if (mapAndroidIdToDeviceId.containsKey(androidId)) {
                     mapAndroidIdToDeviceId.get(androidId).add(deviceId);
+                    countDuplicateRecords++;
                 } else {
                     List<String> deviceList = new ArrayList<>();
                     deviceList.add(deviceId);
                     mapAndroidIdToDeviceId.put(androidId, deviceList);
                 }
+                countRecords++;
             }
+            System.out.println("Total Records =" + countRecords);
+            System.out.println("Total Duplucate Records = " + countDuplicateRecords);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -41,7 +47,7 @@ public class Main {
 
     public static void updateDuplicateRecord(Connection conn, Map<String, List<String>> mapAndroidIdToDeviceId) {
         PreparedStatement updateStmt;
-        String updateSQL = "UPDATE development.devices SET is_deleted = true where device_id = ?";
+        String updateSQL = "UPDATE public.devices SET is_deleted = 'true' where device_id = ?";
         try {
             updateStmt = conn.prepareStatement(updateSQL);
             for (Map.Entry<String, List<String>> entry : mapAndroidIdToDeviceId.entrySet()) {
@@ -50,7 +56,7 @@ public class Main {
                     for (int index = 1; index < deviceIdList.size(); index++) {
                         updateStmt.setString(1, deviceIdList.get(index));
                         updateStmt.addBatch();
-                        System.out.println(updateStmt);
+                        //System.out.println(updateStmt);
                     }
                 }
             }
@@ -61,7 +67,6 @@ public class Main {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
     }
 
     public static void main(String[] args) {
@@ -71,3 +76,4 @@ public class Main {
         JDBCConnector.close(connection);
     }
 }
+
