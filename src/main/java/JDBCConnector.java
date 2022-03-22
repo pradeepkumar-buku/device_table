@@ -2,10 +2,12 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+
 public class JDBCConnector {
-    public static final String DB_URL = "XX";
-    public static final String USER = "XX";
-    public static final String PASS = "XX";
+
+    public static  String DB_URL ;
+    public static  String USER ;
+    public static  String PASS;
 
     public static Connection getConnection()  {
         Connection  connection = null;

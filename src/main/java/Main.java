@@ -56,24 +56,38 @@ public class Main {
                     for (int index = 1; index < deviceIdList.size(); index++) {
                         updateStmt.setString(1, deviceIdList.get(index));
                         updateStmt.addBatch();
-                        //System.out.println(updateStmt);
                     }
                 }
             }
+            System.out.println("Executing batch update");
             int[] count = updateStmt.executeBatch();
             System.out.println("Duplicate Record update : " + count.length);
             updateStmt.close();
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
     public static void main(String[] args) {
-        Connection connection = JDBCConnector.getConnection();
-        Map<String, List<String>> mapAndroidIdToDeviceId = getAllRecordsInMap(connection);
-        updateDuplicateRecord(connection, mapAndroidIdToDeviceId);
-        JDBCConnector.close(connection);
+        try {
+            JDBCConnector.DB_URL = args[0];
+            JDBCConnector.USER = args[1];
+            JDBCConnector.PASS = args[2];
+            if (args.length == 3) {
+                Connection connection = JDBCConnector.getConnection();
+                if (connection != null) {
+                    Map<String, List<String>> mapAndroidIdToDeviceId = getAllRecordsInMap(connection);
+                    updateDuplicateRecord(connection, mapAndroidIdToDeviceId);
+                    System.out.println("Script ran sucessfully");
+                }
+                JDBCConnector.close(connection);
+            } else {
+                System.out.println("Please provide valid url, user, password");
+            }
+        } catch (Exception e) {
+            System.out.println("Ended with Exceptions");
+            e.printStackTrace();
+        }
     }
 }
 
