@@ -10,7 +10,7 @@ public class Main {
      * Get all records of devices table.
      **/
     public static Map<String, List<String>> getAllRecordsInMap(Connection conn) {
-        String QUERY = "SELECT * from public.devices where is_deleted is null or is_deleted = 'false'";
+        String QUERY = "SELECT * from development.devices where is_deleted is null or is_deleted = 'false'";
         Map<String, List<String>> mapAndroidIdToDeviceId = null;
         Statement stmt;
         ResultSet rs;
@@ -47,7 +47,7 @@ public class Main {
 
     public static void updateDuplicateRecord(Connection conn, Map<String, List<String>> mapAndroidIdToDeviceId) {
         PreparedStatement updateStmt;
-        String updateSQL = "UPDATE public.devices SET is_deleted = 'true' where device_id = ?";
+        String updateSQL = "UPDATE development.devices SET is_deleted = 'true' where device_id = ?";
         try {
             updateStmt = conn.prepareStatement(updateSQL);
             for (Map.Entry<String, List<String>> entry : mapAndroidIdToDeviceId.entrySet()) {
