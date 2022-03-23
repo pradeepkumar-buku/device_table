@@ -1,8 +1,6 @@
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.IntStream;
 
 public class Main {
 
@@ -10,7 +8,15 @@ public class Main {
      * Get all records of devices table.
      **/
     public static Map<String, List<String>> getAllRecordsInMap(Connection conn) {
-        String QUERY = "SELECT * from development.devices where is_deleted is null or is_deleted = 'false'";
+        System.out.println("[INFO] Inside gellAllRecordMap method");
+        String QUERY = "select d1.device_id, d1.android_id\n" +
+                "from public.devices as d1\n" +
+                "inner join \n" +
+                "(select d2.android_id,count(d2.android_id)\n" +
+                "from public.devices d2\n" +
+                "group by d2.android_id\n" +
+                "having count(d2.android_id)>1) d3\n" +
+                "on d3.android_id = d1.android_id;";
         Map<String, List<String>> mapAndroidIdToDeviceId = null;
         Statement stmt;
         ResultSet rs;
@@ -33,11 +39,13 @@ public class Main {
                 }
                 countRecords++;
             }
-            System.out.println("Total Records =" + countRecords);
-            System.out.println("Total Duplucate Records = " + countDuplicateRecords);
+
+            System.out.println("[INFO] Total Records =" + countRecords);
+            System.out.println("[INFO] Total Duplucate Records = " + countDuplicateRecords);
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        System.out.println("[INFO] Exiting from gellAllRecordMap method");
         return mapAndroidIdToDeviceId;
     }
 
@@ -46,30 +54,34 @@ public class Main {
      **/
 
     public static void updateDuplicateRecord(Connection conn, Map<String, List<String>> mapAndroidIdToDeviceId) {
+        System.out.println("[INFO] Inside updateDuplicateRecord method");
         PreparedStatement updateStmt;
-        String updateSQL = "UPDATE development.devices SET is_deleted = 'true' where device_id = ?";
+        String updateSQL = "UPDATE public.devices SET is_deleted = 'true' where device_id = ? and (is_deleted is null or is_deleted = 'false')";
         try {
             updateStmt = conn.prepareStatement(updateSQL);
             for (Map.Entry<String, List<String>> entry : mapAndroidIdToDeviceId.entrySet()) {
                 List<String> deviceIdList = entry.getValue();
                 if (deviceIdList.size() > 1) {
+                    Collections.sort(deviceIdList);
                     for (int index = 1; index < deviceIdList.size(); index++) {
                         updateStmt.setString(1, deviceIdList.get(index));
                         updateStmt.addBatch();
                     }
                 }
             }
-            System.out.println("Executing batch update");
+            System.out.println("[INFO] Executing batch update");
             int[] count = updateStmt.executeBatch();
-            System.out.println("Duplicate Record update : " + count.length);
+            System.out.println("[INFO] Duplicate Record update : " + IntStream.of(count).sum());
             updateStmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        System.out.println("[INFO] Exiting updateDuplicateRecord method");
     }
 
     public static void main(String[] args) {
         try {
+            System.out.println("[INFO] Inside main");
             JDBCConnector.DB_URL = args[0];
             JDBCConnector.USER = args[1];
             JDBCConnector.PASS = args[2];
@@ -78,7 +90,6 @@ public class Main {
                 if (connection != null) {
                     Map<String, List<String>> mapAndroidIdToDeviceId = getAllRecordsInMap(connection);
                     updateDuplicateRecord(connection, mapAndroidIdToDeviceId);
-                    System.out.println("Script ran sucessfully");
                 }
                 JDBCConnector.close(connection);
             } else {
